@@ -46,7 +46,12 @@
                             piece-count)))))))))
 
 (def hover-column (atom 0))
-(def board (atom (insert :blue 6 (insert :blue 0 (insert :blue 0 [])))))
+(def board (atom []))
+(def move-num (atom 0))
+(def is-winner? (atom false))
+
+(defn cur-color []
+  (if (even? @move-num) :red :blue))
 
 (defn col-off-board? [col]
   (or (> col 6) (< col 0)))
@@ -62,12 +67,20 @@
     "visible-indicator"
     "invisible-indicator"))
 
+(defn check-for-winner [col]
+  (when 
+    (four-connected? col (cur-color) @board) 
+    (reset! is-winner? true)))
+
 (defn board-html-easy [board-to-draw]
   [:div {:id "board"}
    (for [col (range 7)]
      [:div {:class (str "col " "col-" col)
             :on-mouse-over #(swap! hover-column (fn [x] col))
-            :on-click #(swap! board (partial insert :red col))}
+            :on-click #(do 
+                         (swap! move-num inc) 
+                         (swap! board (partial insert (cur-color) col))
+                         (check-for-winner col))}
       [:div {:class (str "indicator " "indicator-" col " " (is-visible-indicator col))}]
       (for [row (reverse (range 7))]
         [:div {:class
@@ -78,9 +91,17 @@
                      (name piece-color)
                      "empty")))}])])])
 
+  (defn timer-component []
+    (let [seconds-elapsed (atom 0)]
+      (fn []
+        (js/setTimeout #(swap! seconds-elapsed inc) 1000)
+        [:div
+         "Seconds Elapsed: " @seconds-elapsed])))
+
   (defn home-page []
     [:div [:h2 "Welcome to connect-four"]
-     [:div [:a {:href "#/about"} "go to about page"]]])
+     [:div [:a {:href "#/about"} "go to about page"]]
+     [:div [:div "hello dude"] [:div [timer-component]]]])
 
   (defn about-page []
     [:div [:h2 "About connect-four"]
@@ -90,7 +111,7 @@
 
   (defn connect-four []
     (do
-      [:div [:h2 (str "THIS IS CONNECT FOUR!" @hover-column)]
+      [:div [:h2 (str "THIS IS CONNECT FOUR!" @hover-column @is-winner?)]
        [:div (board-html-easy @board)]]))
 
   (defn connect-four-2 []
