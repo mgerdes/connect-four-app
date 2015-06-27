@@ -45,6 +45,24 @@
                             (recur ((:row-fn f) row) ((:col-fn f) col) (inc piece-count))
                             piece-count)))))))))
 
+(defn all-children [initial-board color max-depth]
+  (map (fn [col]
+         (let [next-color (if (= :red color) :blue :red)
+               board (insert color col initial-board)
+               is-winner? (four-connected? col color board) 
+               children (if (or (zero? max-depth) is-winner?) 
+                          nil
+                          (all-children board next-color (dec max-depth)))
+               score (if children 
+                       (if (= color :red) 
+                         (apply min (map #(get-in % [:score :value]) children))
+                         (apply max (map #(get-in % [:score :value]) children))) 
+                       (if is-winner? (if (= :red color) 1000 -1000) 0))]
+           {:board board
+            :score {:col col 
+                    :value score}
+            :children children})) (range 7)))
+
 (def hover-column (atom 0))
 (def board (atom []))
 (def move-num (atom 0))
@@ -57,19 +75,29 @@
   (or (> col 6) (< col 0)))
 
 (defn col-full? [col board]
-  (> (num-pieces-in-col col board) 7))
+  (> (num-pieces-in-col col board) 6))
 
 (defn invalid-input [col board]
   (or (col-off-board? col) (col-full? col board)))
+
+(defn valid-input? [col]
+  (not (col-full? col @board)))
+
+(defn best-col [board]
+  (:col (reduce 
+          #(if (> (:value %1) (:value %2)) %1 %2) 
+          (filter 
+            #(valid-input? (:col %1))
+            (map :score (all-children board :red 4))))))
 
 (defn is-visible-indicator [indicator-num]
   (if (= @hover-column indicator-num)
     "visible-indicator"
     "invisible-indicator"))
 
-(defn check-for-winner [col]
+(defn check-for-winner [col color]
   (when 
-    (four-connected? col (cur-color) @board) 
+    (four-connected? col color @board) 
     (reset! is-winner? true)))
 
 (defn board-html-easy [board-to-draw]
@@ -79,8 +107,11 @@
             :on-mouse-over #(swap! hover-column (fn [x] col))
             :on-click #(do 
                          (swap! move-num inc) 
-                         (swap! board (partial insert (cur-color) col))
-                         (check-for-winner col))}
+                         (swap! board (partial insert :blue col))
+                         (check-for-winner col :blue)
+                         (let [best-col (best-col @board)]
+                           (swap! board (partial insert :red best-col))
+                           (check-for-winner best-col :red)))}
       [:div {:class (str "indicator " "indicator-" col " " (is-visible-indicator col))}]
       (for [row (reverse (range 7))]
         [:div {:class
