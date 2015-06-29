@@ -33,6 +33,10 @@ a:hover {
   text-decoration: underline;
 }
 
+.waiting-cursor {
+    cursor: wait;
+}
+
 .center {
     margin: auto;
     text-align: center;

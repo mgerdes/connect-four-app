@@ -68,17 +68,8 @@
 (def move-num (atom 0))
 (def is-winner? (atom false))
 
-(defn cur-color []
-  (if (even? @move-num) :red :blue))
-
-(defn col-off-board? [col]
-  (or (> col 6) (< col 0)))
-
 (defn col-full? [col board]
   (> (num-pieces-in-col col board) 6))
-
-(defn invalid-input [col board]
-  (or (col-off-board? col) (col-full? col board)))
 
 (defn valid-input? [col]
   (not (col-full? col @board)))
@@ -88,7 +79,7 @@
           #(if (> (:value %1) (:value %2)) %1 %2) 
           (filter 
             #(valid-input? (:col %1))
-            (map :score (all-children board :red 4))))))
+            (map :score (all-children board :red 3))))))
 
 (defn is-visible-indicator [indicator-num]
   (if (= @hover-column indicator-num)
@@ -101,11 +92,13 @@
     (reset! is-winner? true)))
 
 (defn board-html-easy [board-to-draw]
-  [:div {:id "board"}
+  [:div {:id "board" 
+         :class ""}
+   [:div {:class "invisible"} (str @hover-column @board)]
    (for [col (range 7)]
      [:div {:class (str "col " "col-" col)
             :on-mouse-over #(swap! hover-column (fn [x] col))
-            :on-click #(do 
+            :on-click #(do
                          (swap! move-num inc) 
                          (swap! board (partial insert :blue col))
                          (check-for-winner col :blue)
@@ -122,67 +115,44 @@
                      (name piece-color)
                      "empty")))}])])])
 
-  (defn timer-component []
-    (let [seconds-elapsed (atom 0)]
-      (fn []
-        (js/setTimeout #(swap! seconds-elapsed inc) 1000)
-        [:div
-         "Seconds Elapsed: " @seconds-elapsed])))
+(defn timer-component []
+  (let [seconds-elapsed (atom 0)]
+    (fn []
+      (js/setTimeout #(swap! seconds-elapsed inc) 1000)
+      [:div
+       "Seconds Elapsed: " @seconds-elapsed])))
 
-  (defn home-page []
-    [:div [:h2 "Welcome to connect-four"]
-     [:div [:a {:href "#/about"} "go to about page"]]
-     [:div [:div "hello dude"] [:div [timer-component]]]])
+(defn home-page []
+  (do
+    [:div {:class "center"} [:h2 (str "CONNECT FOUR!")] [:h5 (str "(Against a moderately smart AI)")]
+     [:div (board-html-easy @board)]]))
 
-  (defn about-page []
-    [:div [:h2 "About connect-four"]
-     [:div [:a {:href "#/"} "hello captain im a good what what"]]
-     [:div [:a {:href "#/connect-four"} "play connect four"]]
-     [:div [:a {:href "#/connect-four-2"} "play connect four2"]] ])
+(defn current-page []
+  [:div [(session/get :current-page)]])
 
-  (defn connect-four []
-    (do
-      [:div [:h2 (str "THIS IS CONNECT FOUR!" @hover-column @is-winner?)]
-       [:div (board-html-easy @board)]]))
+;; -------------------------
+;; Routes
+(secretary/set-config! :prefix "#")
 
-  (defn connect-four-2 []
-    [:div [:h2 "THIS IS CONNECT FOUR 2!"]])
+(secretary/defroute "/" []
+  (session/put! :current-page #'home-page))
 
-  (defn current-page []
-    [:div [(session/get :current-page)]])
+;; -------------------------
+;; History
+;; must be called after routes have been defined
+(defn hook-browser-navigation! []
+  (doto (History.)
+    (events/listen
+      EventType/NAVIGATE
+      (fn [event]
+        (secretary/dispatch! (.-token event))))
+    (.setEnabled true)))
 
-  ;; -------------------------
-  ;; Routes
-  (secretary/set-config! :prefix "#")
+;; -------------------------
+;; Initialize app
+(defn mount-root []
+  (reagent/render-component [current-page] (.getElementById js/document "app")))
 
-  (secretary/defroute "/" []
-    (session/put! :current-page #'home-page))
-
-  (secretary/defroute "/about" []
-    (session/put! :current-page #'about-page))
-
-  (secretary/defroute "/connect-four" []
-    (session/put! :current-page #'connect-four))
-
-  (secretary/defroute "/connect-four-2" []
-    (session/put! :current-page #'connect-four-2))
-
-  ;; -------------------------
-  ;; History
-  ;; must be called after routes have been defined
-  (defn hook-browser-navigation! []
-    (doto (History.)
-      (events/listen
-        EventType/NAVIGATE
-        (fn [event]
-          (secretary/dispatch! (.-token event))))
-      (.setEnabled true)))
-
-  ;; -------------------------
-  ;; Initialize app
-  (defn mount-root []
-    (reagent/render [current-page] (.getElementById js/document "app")))
-
-  (defn init! []
-    (hook-browser-navigation!)
-    (mount-root))
+(defn init! []
+  (hook-browser-navigation!)
+  (mount-root))
