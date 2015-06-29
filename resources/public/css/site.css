@@ -1,8 +1,8 @@
 body {
   font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
-  max-width: 600px;
+  max-width: 496px;
   margin: 0 auto;
-  padding-top: 72px;
+  padding-top: 12px;
   -webkit-font-smoothing: antialiased;
   font-size: 1.125em;
   color: #333;
@@ -33,6 +33,15 @@ a:hover {
   text-decoration: underline;
 }
 
+.center {
+    margin: auto;
+    text-align: center;
+}
+
+.invisible {
+    display: none;
+}
+
 #board {
     margin: auto;
     background-color: #eceaed;
@@ -41,8 +50,8 @@ a:hover {
 
 .piece {
     margin: 2px;
-    width: 50px;
-    height: 50px;
+    width: 64px;
+    height: 64px;
 }
 
 .col {
