@@ -67,6 +67,8 @@
 (def board (atom []))
 (def move-num (atom 0))
 (def is-winner? (atom false))
+(def red-score (atom 0))
+(def blue-score (atom 0))
 
 (defn col-full? [col board]
   (> (num-pieces-in-col col board) 6))
@@ -87,9 +89,14 @@
     "invisible-indicator"))
 
 (defn check-for-winner [col color]
-  (when 
-    (four-connected? col color @board) 
-    (reset! is-winner? true)))
+  (when (four-connected? col color @board) 
+    (reset! board [])))
+
+(defn set-loading-cursor []
+  (set! (.-className (.getElementById js/document "board")) "waiting-cursor"))
+
+(defn set-not-loading-cursor []
+  (set! (.-className (.getElementById js/document "board")) ""))
 
 (defn board-html-easy [board-to-draw]
   [:div {:id "board" 
@@ -102,9 +109,15 @@
                          (swap! move-num inc) 
                          (swap! board (partial insert :blue col))
                          (check-for-winner col :blue)
-                         (let [best-col (best-col @board)]
-                           (swap! board (partial insert :red best-col))
-                           (check-for-winner best-col :red)))}
+                         (set-loading-cursor)
+                         (js/setTimeout 
+                           (fn [] 
+                             (let [best-col (best-col @board)]
+                               (swap! board (partial insert :red best-col))
+                               (check-for-winner best-col :red)
+                               (set-not-loading-cursor)))
+                           100)
+                         )}
       [:div {:class (str "indicator " "indicator-" col " " (is-visible-indicator col))}]
       (for [row (reverse (range 7))]
         [:div {:class
@@ -124,7 +137,13 @@
 
 (defn home-page []
   (do
-    [:div {:class "center"} [:h2 (str "CONNECT FOUR!")] [:h5 (str "(Against a moderately smart AI)")]
+    [:div {:class "center"} 
+     [:h2 (str "CONNECT FOUR!")] 
+     [:h5 (str "(Against a moderately smart AI)")]
+     [:div {:class "score"}
+      [:div {:class "red-score"} @red-score]
+      [:div {:class "blue-score"} @blue-score]
+      [:div {:class "clear-both"}]]
      [:div (board-html-easy @board)]]))
 
 (defn current-page []

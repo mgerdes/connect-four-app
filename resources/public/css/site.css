@@ -33,6 +33,24 @@ a:hover {
   text-decoration: underline;
 }
 
+.blue-score {
+    color: blue;
+    float: left;
+}
+
+.red-score {
+    color: red;
+    float: right;
+}
+
+.clear-both {
+    clear: both;
+}
+
+.score {
+
+}
+
 .waiting-cursor {
     cursor: wait;
 }
