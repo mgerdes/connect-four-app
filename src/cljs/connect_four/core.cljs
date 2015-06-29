@@ -90,7 +90,11 @@
 
 (defn check-for-winner [col color]
   (when (four-connected? col color @board) 
-    (reset! board [])))
+    (do
+      (if (= color :blue)
+        (swap! blue-score inc)
+        (swap! red-score inc))
+      (reset! board []))))
 
 (defn set-loading-cursor []
   (set! (.-className (.getElementById js/document "board")) "waiting-cursor"))
