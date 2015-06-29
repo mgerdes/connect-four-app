@@ -132,13 +132,6 @@
                      (name piece-color)
                      "empty")))}])])])
 
-(defn timer-component []
-  (let [seconds-elapsed (atom 0)]
-    (fn []
-      (js/setTimeout #(swap! seconds-elapsed inc) 1000)
-      [:div
-       "Seconds Elapsed: " @seconds-elapsed])))
-
 (defn home-page []
   (do
     [:div {:class "center"} 
